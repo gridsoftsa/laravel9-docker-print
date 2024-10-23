@@ -21,11 +21,11 @@ services:
 
   backend:
     build:
-      context: .docker/php
-      dockerfile: dockerfile
+        context: .
+        dockerfile: .docker/php/dockerfile
     container_name: backend
     volumes:
-      - ./:/var/www
-      - .docker/php/php.ini:/usr/local/etc/php/conf.d/local.ini
+        - ./:/var/www
+        - .docker/php/php.ini:/usr/local/etc/php/conf.d/local.ini
     networks:
-      app-network:
+        app-network:

@@ -3,7 +3,7 @@ FROM php:8.2-fpm
 ENV USER=www
 ENV GROUP=www
 
-# Install system dependencies
+# Instalar dependencias del sistema y PHP
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -11,35 +11,38 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     zip \
-    unzip
+    unzip \
+    libpq-dev \
+    libicu-dev \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-install intl pdo_mysql mbstring exif pcntl bcmath gd pdo pdo_pgsql
 
-# Clear cache
+# Limpiar cache de APT
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
-
-# Install Postgre PDO
-RUN apt-get update && apt-get install -y libpq-dev && docker-php-ext-install pdo pdo_pgsql
-
-# Get latest Composer
+# Copiar Composer desde la imagen oficial
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
-# Setup working directory
-WORKDIR /var/www/
-
-# Create User and Group
+# Crear usuario y grupo
 RUN groupadd -g 1000 ${GROUP} && useradd -u 1000 -ms /bin/bash -g ${GROUP} ${USER}
 
-# Grant Permissions
-RUN chown -R ${USER} /var/www
+# Establecer el directorio de trabajo
+WORKDIR /var/www
 
-# Select User
+# Asignar permisos
+RUN chown -R ${USER}:${GROUP} /var/www
+
+# Cambiar a usuario no root
 USER ${USER}
 
-# Copy permission to selected user
+# Copiar archivos del proyecto
 COPY --chown=${USER}:${GROUP} . .
 
+# Instalar dependencias de Composer
+RUN composer install --no-dev --optimize-autoloader
+
+# Exponer puerto para PHP-FPM
 EXPOSE 9000
 
+# Comando por defecto
 CMD ["php-fpm"]
