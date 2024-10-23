@@ -10,9 +10,9 @@ services:
   webserver:
     image: nginx:1.21.6-alpine
     container_name: webserver
-    restart: unless-stopped
+    restart: always
     ports:
-      - "80:80"
+      - "8081:80"
     volumes:
       - ./:/var/www
       - .docker/nginx:/etc/nginx/conf.d
