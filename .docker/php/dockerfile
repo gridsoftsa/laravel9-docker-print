@@ -1,48 +1,52 @@
+# Imagen base de PHP con FPM
 FROM php:8.2-fpm
 
-ENV USER=www
-ENV GROUP=www
+# Crear el usuario y grupo nginx
+RUN addgroup --system nginx && adduser --system --ingroup nginx nginx
 
-# Instalar dependencias del sistema y PHP
+# Instalar Nginx, supervisor y dependencias necesarias
 RUN apt-get update && apt-get install -y \
+    nginx \
+    supervisor \
     git \
     curl \
+    unzip \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    zip \
-    unzip \
     libpq-dev \
     libicu-dev \
     && docker-php-ext-configure intl \
     && docker-php-ext-install intl pdo_mysql mbstring exif pcntl bcmath gd pdo pdo_pgsql
 
-# Limpiar cache de APT
+# Limpiar la cache de APT
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copiar Composer desde la imagen oficial
-COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
-
-# Crear usuario y grupo
-RUN groupadd -g 1000 ${GROUP} && useradd -u 1000 -ms /bin/bash -g ${GROUP} ${USER}
+# Copiar configuración de Nginx y supervisor
+COPY .docker/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY .docker/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
 
 # Establecer el directorio de trabajo
 WORKDIR /var/www
 
-# Asignar permisos
-RUN chown -R ${USER}:${GROUP} /var/www
+# Copiar los archivos del proyecto
+COPY . .
 
-# Cambiar a usuario no root
-USER ${USER}
+# Copiar el archivo .env desde .env.example
+RUN cp .env.example .env
 
-# Copiar archivos del proyecto
-COPY --chown=${USER}:${GROUP} . .
-
-# Instalar dependencias de Composer
+# Instalar Composer y dependencias
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 RUN composer install --no-dev --optimize-autoloader
 
-# Exponer puerto para PHP-FPM
-EXPOSE 9000
+# Generar la clave de la aplicación
+RUN php artisan key:generate
 
-# Comando por defecto
-CMD ["php-fpm"]
+# Establecer permisos para los archivos
+RUN chown -R nginx:nginx /var/www
+
+# Exponer los puertos necesarios
+EXPOSE 80 9000
+
+# Comando por defecto para iniciar Nginx y PHP-FPM con supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
