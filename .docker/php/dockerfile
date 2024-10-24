@@ -43,7 +43,9 @@ RUN composer install --no-dev --optimize-autoloader
 RUN php artisan key:generate
 
 # Establecer permisos para los archivos
-RUN chown -R nginx:nginx /var/www
+RUN chown -R nginx:nginx /var/www \
+    && chmod -R 775 /var/www/storage \
+    && chmod -R 775 /var/www/storage/logs
 
 # Exponer los puertos necesarios
 EXPOSE 80 9000

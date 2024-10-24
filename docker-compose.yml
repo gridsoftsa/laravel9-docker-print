@@ -10,7 +10,7 @@ services:
   laravel-app:
     build:
       context: .
-      dockerfile: .docker/php/Dockerfile
+      dockerfile: .docker/php/dockerfile
     container_name: laravel-app
     restart: always
     ports:
