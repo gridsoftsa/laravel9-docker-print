@@ -8,9 +8,7 @@ volumes:
 
 services:
   laravel-app:
-    build:
-      context: .
-      dockerfile: .docker/php/dockerfile
+    image: gridsoftsas/laravel-print-pos:latest  # Usa la imagen descargada
     container_name: laravel-app
     restart: always
     ports:
